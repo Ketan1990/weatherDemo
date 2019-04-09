@@ -8,8 +8,6 @@ import android.view.MenuItem;
 
 public class MainActivity extends AppCompatActivity implements ForecastListFragment.OnListFragmentInteractionListener
 {
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -42,6 +40,7 @@ public class MainActivity extends AppCompatActivity implements ForecastListFragm
         if (id == R.id.action_settings) {
             return true;
         }
+
 
         return super.onOptionsItemSelected(item);
     }

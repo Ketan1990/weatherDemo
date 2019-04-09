@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.Inflater;
 
 public class ForecastDataAdapter extends RecyclerView.Adapter<ForecastDataAdapter.WeatherDataViewHolder> {
@@ -23,13 +24,13 @@ public class ForecastDataAdapter extends RecyclerView.Adapter<ForecastDataAdapte
     }
 
 
-    public ForecastDataAdapter(ListItemClickHandler context) {
-        listItemClickHandler = context;
+    public ForecastDataAdapter(ListItemClickHandler listItemClickHandler) {
+        this.listItemClickHandler = listItemClickHandler;
 
     }
 
     public void setDataSet(ArrayList<String> dataset){
-        mDataset = dataset;
+        mDataset =  dataset;
         notifyDataSetChanged();
     }
 
@@ -61,11 +62,11 @@ public class ForecastDataAdapter extends RecyclerView.Adapter<ForecastDataAdapte
 
     @Override
     public int getItemCount() {
-        if(!mDataset.isEmpty())
+        if(mDataset != null)
         return mDataset.size();
-
         return 0;
-    }
+   }
+
 
     public   class WeatherDataViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
