@@ -6,6 +6,9 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.AsyncTaskLoader;
+import android.support.v4.content.Loader;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -25,7 +28,8 @@ import java.util.List;
 
 import okhttp3.Request;
 
-public class ForecastListFragment extends Fragment implements ForecastDataAdapter.ListItemClickHandler {
+public class ForecastListFragment extends Fragment implements ForecastDataAdapter.ListItemClickHandler, LoaderManager.LoaderCallbacks<ArrayList<String>> {
+    private static final int FORECAST_LOADER_ID = 0;
     private RecyclerView recyclerView;
     private LinearLayoutManager layoutManganger;
     private ForecastDataAdapter mAdpter;
@@ -36,6 +40,7 @@ public class ForecastListFragment extends Fragment implements ForecastDataAdapte
     private TextView mErrorMessageDisplay;
 
     public ForecastListFragment(){
+
 
     }
 
@@ -55,6 +60,7 @@ public class ForecastListFragment extends Fragment implements ForecastDataAdapte
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
 
+        int loaderId = FORECAST_LOADER_ID;
 
         View rootView = inflater.inflate(R.layout.fragment_forecast,container,false);
 
@@ -77,7 +83,9 @@ public class ForecastListFragment extends Fragment implements ForecastDataAdapte
         mAdpter = new ForecastDataAdapter(this);
         recyclerView.setAdapter(mAdpter);
 
-        new FetchWeatherTask().execute(SunShinePreference.getPreferredWeatherLocation(getContext()));
+        getLoaderManager().initLoader(loaderId,null,this);
+
+        //        new FetchWeatherTask().execute(SunShinePreference.getPreferredWeatherLocation(getContext()));
 
 
 
@@ -102,10 +110,87 @@ public class ForecastListFragment extends Fragment implements ForecastDataAdapte
         mListener = null;
     }
 
+    private void showWeatherData() {
+        mErrorMessageDisplay.setVisibility(View.INVISIBLE);
+        // COMPLETED (44) Show mRecyclerView, not mWeatherTextView
+        /* Then, make sure the weather data is visible */
+        recyclerView.setVisibility(View.VISIBLE);
+    }
+
+
+    private void showErrorMessage() {
+        /* First, hide the currently visible data */
+        recyclerView.setVisibility(View.INVISIBLE);
+        /* Then, show the error */
+        mErrorMessageDisplay.setVisibility(View.VISIBLE);
+    }
+
+    @NonNull
+    @Override
+    public Loader<ArrayList<String>> onCreateLoader(int i, @Nullable Bundle bundle) {
+        return new AsyncTaskLoader<ArrayList<String>>(getActivity()) {
+            ArrayList<String> mWeatherData = null;
+            @Override
+            protected void onStartLoading() {
+                if(mWeatherData != null){
+                    deliverResult(mWeatherData);
+                }else{
+                    forceLoad();
+                }
+                super.onStartLoading();
+            }
+
+            @Nullable
+            @Override
+            public ArrayList<String> loadInBackground() {
+                String location = SunShinePreference.getPreferredWeatherLocation(getActivity());
+
+                Request request = NetworkUtillity.buildWeatherRequestUrl(location);
+                try {
+                    String weatherDataJson = NetworkUtillity.getResponseFromHttpUrl(request);
+                    ArrayList<String> weatherData = WeatherJsonParser.getSimpleWeatherStringsFromJson(getActivity(),weatherDataJson);
+                    return  weatherData;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return null;
+                }
+            }
+
+            @Override
+            public void deliverResult(@Nullable ArrayList<String> data) {
+                mWeatherData = data;
+                super.deliverResult(data);
+            }
+        };
+    }
+
+    @Override
+    public void onLoadFinished(@NonNull Loader<ArrayList<String>> loader, ArrayList<String> data) {
+        progressbar.setVisibility(View.INVISIBLE);
+        mAdpter.setDataSet(data);
+        if (null == data) {
+            showErrorMessage();
+        } else {
+            showWeatherData();
+        }
+    }
+
+    @Override
+    public void onLoaderReset(@NonNull Loader<ArrayList<String>> loader) {
+
+    }
+
     public interface OnListFragmentInteractionListener {
         // TODO: Update argument type and name
         void onFragmentInteraction(String data);
     }
+
+
+
+
+
+
+
     public class FetchWeatherTask extends AsyncTask<String,Void,ArrayList<String>> {
 
         @Override
@@ -145,18 +230,5 @@ public class ForecastListFragment extends Fragment implements ForecastDataAdapte
 
     }
 
-    private void showWeatherData() {
-        mErrorMessageDisplay.setVisibility(View.INVISIBLE);
-        // COMPLETED (44) Show mRecyclerView, not mWeatherTextView
-        /* Then, make sure the weather data is visible */
-        recyclerView.setVisibility(View.VISIBLE);
-    }
 
-
-    private void showErrorMessage() {
-        /* First, hide the currently visible data */
-        recyclerView.setVisibility(View.INVISIBLE);
-        /* Then, show the error */
-        mErrorMessageDisplay.setVisibility(View.VISIBLE);
-    }
 }
