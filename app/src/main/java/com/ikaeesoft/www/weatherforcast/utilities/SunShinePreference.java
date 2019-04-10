@@ -1,6 +1,10 @@
 package com.ikaeesoft.www.weatherforcast.utilities;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.support.v7.preference.PreferenceManager;
+
+import com.ikaeesoft.www.weatherforcast.R;
 
 public class SunShinePreference {
 
@@ -73,7 +77,11 @@ public class SunShinePreference {
      */
     public static String getPreferredWeatherLocation(Context context) {
         /** This will be implemented in a future lesson **/
-        return getDefaultWeatherLocation();
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        String key = context.getString(R.string.pref_location_key);
+        String defaultValue = context.getString(R.string.pref_location_default);
+        String location = sharedPreferences.getString(key,defaultValue);
+        return location;
     }
 
     /**
@@ -84,7 +92,15 @@ public class SunShinePreference {
      */
     public static boolean isMetric(Context context) {
         /** This will be implemented in a future lesson **/
-        return true;
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(context);
+        String key = context.getString(R.string.pref_units_key);
+        String defaultUnits = context.getString(R.string.pref_units_metric);
+        String meteric = context.getString(R.string.pref_units_metric);
+        String unit = sharedPref.getString(key,defaultUnits);
+        if(unit.equals(meteric)){
+            return true;
+        }
+        return false;
     }
 
     /**

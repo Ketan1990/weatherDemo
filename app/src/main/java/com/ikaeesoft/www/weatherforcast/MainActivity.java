@@ -1,13 +1,21 @@
 package com.ikaeesoft.www.weatherforcast;
 
 import android.content.Intent;
+import android.net.Uri;
+import android.nfc.Tag;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.ikaeesoft.www.weatherforcast.utilities.SunShinePreference;
+
 public class MainActivity extends AppCompatActivity implements ForecastListFragment.OnListFragmentInteractionListener
 {
+    private ForecastListFragment forecastFragment;
+
+    private static final String  TAG = "MainActivity";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -16,7 +24,7 @@ public class MainActivity extends AppCompatActivity implements ForecastListFragm
         getSupportActionBar().setIcon(R.mipmap.ic_launcher);
         getSupportActionBar().setDisplayUseLogoEnabled(true);
 
-        ForecastListFragment forecastFragment = new ForecastListFragment();
+         forecastFragment = new ForecastListFragment();
         if(savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction().add(R.id.container,forecastFragment).commit();
         }
@@ -37,13 +45,39 @@ public class MainActivity extends AppCompatActivity implements ForecastListFragm
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+        switch(id) {
+            case R.id.action_refresh:
+                forecastFragment.restartLoader();
+                return true;
+            case R.id.action_settings:
+                Intent intent = new Intent(this,Setting.class);
+                startActivity(intent);
+                return true;
+            case R.id.action_map:
+                openLocationInMap();
+
+            default:
+                break;
         }
 
 
         return super.onOptionsItemSelected(item);
     }
+    private void openLocationInMap() {
+        String addressString = SunShinePreference.getPreferredWeatherLocation(this);
+        Uri geoLocation = Uri.parse("geo:0,0?q=" + addressString);
+
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setData(geoLocation);
+
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            startActivity(intent);
+        } else {
+            Log.d(TAG, "Couldn't call " + geoLocation.toString() + ", no receiving apps installed!");
+        }
+    }
+
+
 
     @Override
     public void onFragmentInteraction(String data) {

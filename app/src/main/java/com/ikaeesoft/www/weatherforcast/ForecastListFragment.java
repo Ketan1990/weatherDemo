@@ -1,8 +1,10 @@
 package com.ikaeesoft.www.weatherforcast;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -28,16 +30,22 @@ import java.util.List;
 
 import okhttp3.Request;
 
-public class ForecastListFragment extends Fragment implements ForecastDataAdapter.ListItemClickHandler, LoaderManager.LoaderCallbacks<ArrayList<String>> {
+public class ForecastListFragment extends Fragment implements
+        ForecastDataAdapter.ListItemClickHandler, LoaderManager.LoaderCallbacks<ArrayList<String>>,
+        SharedPreferences.OnSharedPreferenceChangeListener
+
+{
     private static final int FORECAST_LOADER_ID = 0;
+    private  boolean PREFERENCES_HAVE_BEEN_UPDATED ;
     private RecyclerView recyclerView;
     private LinearLayoutManager layoutManganger;
     private ForecastDataAdapter mAdpter;
-    private Context mcontext;
 
     private OnListFragmentInteractionListener mListener;
     private ProgressBar progressbar;
     private TextView mErrorMessageDisplay;
+    int loaderId = FORECAST_LOADER_ID;
+    private SharedPreferences sharedPreferences;
 
     public ForecastListFragment(){
 
@@ -52,15 +60,14 @@ public class ForecastListFragment extends Fragment implements ForecastDataAdapte
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-
+        sharedPreferences= PreferenceManager.getDefaultSharedPreferences(getActivity());
     }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
 
-        int loaderId = FORECAST_LOADER_ID;
+
 
         View rootView = inflater.inflate(R.layout.fragment_forecast,container,false);
 
@@ -75,7 +82,7 @@ public class ForecastListFragment extends Fragment implements ForecastDataAdapte
 
         recyclerView.setHasFixedSize(true);
 
-        layoutManganger = new LinearLayoutManager(mcontext,LinearLayoutManager.VERTICAL,false);
+        layoutManganger = new LinearLayoutManager(getActivity(),LinearLayoutManager.VERTICAL,false);
 
         recyclerView.setLayoutManager(layoutManganger);
 
@@ -85,7 +92,11 @@ public class ForecastListFragment extends Fragment implements ForecastDataAdapte
 
         getLoaderManager().initLoader(loaderId,null,this);
 
-        //        new FetchWeatherTask().execute(SunShinePreference.getPreferredWeatherLocation(getContext()));
+        PREFERENCES_HAVE_BEEN_UPDATED = false;
+        sharedPreferences.registerOnSharedPreferenceChangeListener(this);
+
+
+//         new FetchWeatherTask().execute(SunShinePreference.getPreferredWeatherLocation(getContext()));
 
 
 
@@ -125,16 +136,24 @@ public class ForecastListFragment extends Fragment implements ForecastDataAdapte
         mErrorMessageDisplay.setVisibility(View.VISIBLE);
     }
 
+    public void restartLoader() {
+        mAdpter.setDataSet(null);
+        showWeatherData();
+        getLoaderManager().restartLoader(loaderId,null,this);
+    }
+
+
     @NonNull
     @Override
     public Loader<ArrayList<String>> onCreateLoader(int i, @Nullable Bundle bundle) {
         return new AsyncTaskLoader<ArrayList<String>>(getActivity()) {
-            ArrayList<String> mWeatherData = null;
+            private ArrayList<String> mWeatherData = null;
             @Override
             protected void onStartLoading() {
                 if(mWeatherData != null){
                     deliverResult(mWeatherData);
                 }else{
+                    progressbar.setVisibility(View.VISIBLE);
                     forceLoad();
                 }
                 super.onStartLoading();
@@ -177,8 +196,30 @@ public class ForecastListFragment extends Fragment implements ForecastDataAdapte
 
     @Override
     public void onLoaderReset(@NonNull Loader<ArrayList<String>> loader) {
+       /* Not implemented*/
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        if(PREFERENCES_HAVE_BEEN_UPDATED) {
+            restartLoader();
+        }
 
     }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        sharedPreferences.unregisterOnSharedPreferenceChangeListener(this);
+
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
+        PREFERENCES_HAVE_BEEN_UPDATED = true;
+    }
+
 
     public interface OnListFragmentInteractionListener {
         // TODO: Update argument type and name
@@ -190,45 +231,45 @@ public class ForecastListFragment extends Fragment implements ForecastDataAdapte
 
 
 
-
-    public class FetchWeatherTask extends AsyncTask<String,Void,ArrayList<String>> {
-
-        @Override
-        protected void onPreExecute() {
-            progressbar.setVisibility(View.VISIBLE);
-            super.onPreExecute();
-        }
-
-        @Override
-        protected ArrayList<String> doInBackground(String... strings) {
-            String location = SunShinePreference.getPreferredWeatherLocation(getActivity());
-
-            Request request = NetworkUtillity.buildWeatherRequestUrl(location);
-            try {
-                String weatherDataJson = NetworkUtillity.getResponseFromHttpUrl(request);
-                ArrayList<String> weatherData = WeatherJsonParser.getSimpleWeatherStringsFromJson(getActivity(),weatherDataJson);
-                return  weatherData;
-            } catch (Exception e) {
-                e.printStackTrace();
-                return null;
-            }
-        }
-
-        @Override
-        protected void onPostExecute(ArrayList<String> strings) {
-            progressbar.setVisibility(View.INVISIBLE);
-            if(strings != null) {
-                showWeatherData();
-                mAdpter.setDataSet(strings);
-
-            }else{
-                showErrorMessage();
-            }
-            super.onPostExecute(strings);
-        }
-
-
-    }
+//
+//    public class FetchWeatherTask extends AsyncTask<String,Void,ArrayList<String>> {
+//
+//        @Override
+//        protected void onPreExecute() {
+//            progressbar.setVisibility(View.VISIBLE);
+//            super.onPreExecute();
+//        }
+//
+//        @Override
+//        protected ArrayList<String> doInBackground(String... strings) {
+//            String location = SunShinePreference.getPreferredWeatherLocation(getActivity());
+//
+//            Request request = NetworkUtillity.buildWeatherRequestUrl(location);
+//            try {
+//                String weatherDataJson = NetworkUtillity.getResponseFromHttpUrl(request);
+//                ArrayList<String> weatherData = WeatherJsonParser.getSimpleWeatherStringsFromJson(getActivity(),weatherDataJson);
+//                return  weatherData;
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//                return null;
+//            }
+//        }
+//
+//        @Override
+//        protected void onPostExecute(ArrayList<String> strings) {
+//            progressbar.setVisibility(View.INVISIBLE);
+//            if(strings != null) {
+//                showWeatherData();
+//                mAdpter.setDataSet(strings);
+//
+//            }else{
+//                showErrorMessage();
+//            }
+//            super.onPostExecute(strings);
+//        }
+//
+//
+//    }
 
 
 }
