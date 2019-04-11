@@ -56,6 +56,9 @@ public class MainActivity extends AppCompatActivity implements ForecastListFragm
             case R.id.action_map:
                 openLocationInMap();
 
+            case R.id.action_visit:
+                openApp();
+
             default:
                 break;
         }
@@ -63,6 +66,15 @@ public class MainActivity extends AppCompatActivity implements ForecastListFragm
 
         return super.onOptionsItemSelected(item);
     }
+
+    private void openApp() {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.apalon.weatherlive" )));
+        } catch (android.content.ActivityNotFoundException anfe) {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.apalon.weatherlive" )));
+        }
+    }
+
     private void openLocationInMap() {
         String addressString = SunShinePreference.getPreferredWeatherLocation(this);
         Uri geoLocation = Uri.parse("geo:0,0?q=" + addressString);
